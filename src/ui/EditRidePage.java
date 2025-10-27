@@ -1,0 +1,89 @@
+package ui;
+
+import javax.swing.*;
+import java.awt.*;
+import model.Ride;
+import storage.RideStorage;
+
+public class EditRidePage extends JFrame {
+    private JTextField srcField, destField, fareField;
+    private Ride ride;
+    private ViewRidesPage parentPage;
+
+    public EditRidePage(Ride ride, ViewRidesPage parentPage) {
+        this.ride = ride;
+        this.parentPage = parentPage;
+
+        Theme.apply();
+        setTitle("Edit Ride");
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setSize(480, 280);
+        getContentPane().setBackground(Theme.BG);
+        setLayout(new BorderLayout());
+
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBackground(Theme.PANEL);
+        form.setBorder(BorderFactory.createEmptyBorder(16,16,16,16));
+        GridBagConstraints c = new GridBagConstraints();
+        c.insets = new Insets(8,8,8,8);
+        c.fill = GridBagConstraints.HORIZONTAL;
+
+        c.gridx=0; c.gridy=0; form.add(label("Source:"), c);
+        c.gridx=1; srcField = new JTextField(18); srcField.setText(ride.getSource()); form.add(srcField, c);
+
+        c.gridx=0; c.gridy=1; form.add(label("Destination:"), c);
+        c.gridx=1; destField = new JTextField(18); destField.setText(ride.getDestination()); form.add(destField, c);
+
+        c.gridx=0; c.gridy=2; form.add(label("Fare (₹):"), c);
+        c.gridx=1; fareField = new JTextField(18); fareField.setText(String.valueOf(ride.getFare())); form.add(fareField, c);
+
+        JPanel buttons = new JPanel();
+        buttons.setBackground(Theme.BG);
+        JButton saveBtn = styledButton("Save");
+        JButton cancelBtn = styledButton("Cancel");
+        buttons.add(saveBtn); buttons.add(cancelBtn);
+
+        saveBtn.addActionListener(e -> saveRide());
+        cancelBtn.addActionListener(e -> dispose());
+
+        add(form, BorderLayout.CENTER);
+        add(buttons, BorderLayout.SOUTH);
+
+        setLocationRelativeTo(null);
+        setVisible(true);
+    }
+
+    private JLabel label(String t){ JLabel l = new JLabel(t); l.setForeground(Theme.FORE); return l; }
+
+    private JButton styledButton(String text){
+        JButton b = new JButton(text);
+        b.setBackground(Theme.ACCENT);
+        b.setForeground(Color.WHITE);
+        b.setFocusPainted(false);
+        return b;
+    }
+
+    private void saveRide() {
+        String s = srcField.getText().trim();
+        String d = destField.getText().trim();
+        String f = fareField.getText().trim();
+
+        if (s.isEmpty() || d.isEmpty() || f.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please fill all fields", "Validation", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            double fare = Double.parseDouble(f);
+            // preserve existing seatsAvailable when updating
+            ride = new Ride(ride.getId(), s, d, fare, ride.getSeatsAvailable()); // updated ride with same id and seats
+            RideStorage.updateRide(ride);
+
+            JOptionPane.showMessageDialog(this, "Ride updated successfully!");
+            if (parentPage != null) parentPage.reloadRides();
+            dispose();
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Invalid fare", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+}
